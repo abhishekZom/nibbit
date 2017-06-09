@@ -22,7 +22,7 @@ const redis = require('redis');
  * @param   {Object}    res           express response instance
  * @return  {Void}                    this method doesn't return anything
  */
-function MHGETALL(keys, cb) {
+function MHGETALL(client, requestedEntity, ) {
 
     redis.multi({pipeline: false});
 
