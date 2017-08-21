@@ -338,9 +338,6 @@ function postNewMessage(req) {
 		} else  if(reply == 0) {
 			throw new Error('addition of message to all messages list failed');
 		}
-	}, function(err) {
-		err.message = 'addition of message to all messages list failed';
-		throw err;
 	})
 	.then(function(reply) {
 		return new Promise(function(resolve, reject) {
@@ -353,7 +350,7 @@ function postNewMessage(req) {
 		redis.sremAsync(rKeys.messages, req.body.messages)
 		.then(function(reply) {
 			if(reply) {
-				throw new Error('message addition to list rollback access successful');
+				throw new Error('message addition to list rollback action successful');
 			} else {
 				throw new Error('message addition to list rollback action failed');
 			}
@@ -364,7 +361,7 @@ function postNewMessage(req) {
 }
 
 /**
- * delete a channel
+ * get a single message by id
  */
 function getMessageById() {
 	console.log("dsf");
@@ -372,7 +369,7 @@ function getMessageById() {
 }
 
 /**
- * delete a channel
+ * update a message
  */
 function updateMessage() {
 	console.log("dsf");
@@ -380,7 +377,7 @@ function updateMessage() {
 }
 
 /**
- * delete a channel
+ * delete a message
  */
 function deleteMessage(req) {
 	// check if the channel exists
@@ -396,7 +393,7 @@ function deleteMessage(req) {
 	.then(function(reply) {
 		if(reply == 1) {
 			// remove the message from the list of messages
-			return redis.sremAsync(channelTitles, req.params.title);
+			return redis.sremAsync(rKeys.messages, req.body.message);
 		} else if(reply == 0) {
 			throw new Error('the requested message does not exist');
 		}
@@ -411,14 +408,19 @@ function deleteMessage(req) {
 	.then(function(reply) {
 		return new Promise(function(resolve, reject) {
 			if(reply == 1) {
-				resolve();
+				resolve(reply);
 			} else if(reply == 0) {
-
+				console.log("action to remove the message failed");
+				redis.saddAsync(rKeys.messages, req.body.message)
+				.then(function(innerReply) {
+					if(innerReply == 1) {
+						throw new Error('action to remove the message failed! Removal from the messages list rolled back!');
+					} else {
+						throw new Error('action to remove the message failed! message list removal rollback action failed!');
+					}
+				});
 			}
-		})
-		if(reply == 1) {
-			
-		}
+		});
 	});
 }
 

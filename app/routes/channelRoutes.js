@@ -9,7 +9,6 @@ router.route('/channels')
 	.get(ChannelController.getChannelTitles)
 	.post(ChannelController.createNewChannel);
 
-
 // handlers for a single channel by title
 router.route('/channels/:title')
 	.get(ChannelController.getChannelByTitle)
