@@ -48,26 +48,26 @@ function createNewChannel(req, res) {
 			console.log('unique channel name test passed');
 			return redis.saddAsync(rKeys.channelTitles, req.body.title);
 		}
-	}, function(err) {
-		throw new Error('failed to check channel existence');
 	})
-	.then(function(data) {
-		console.log('channel added to title list');
-		// finally save the channel hash
-		return redis.hmsetAsync(
-			rKeys.rk(rKeys.channels, req.body.title),
-			rKeys.channelProps.title, req.body.title,
-			rKeys.channelProps.usersCount, 0,
-			rKeys.channelProps.messagesCount, 0,
-			rKeys.channelProps.type, req.body.type,
-			rKeys.channelProps.createAt, moment().valueOf()
-		);
-	}, function(err) {
-		redis.sremAsync(rKeys.channelTitles, req.body.title)
-		.then(null, function(err) {
-			throw new Error('addition of channel object failed, rollback action addition to channel list failed')
-		});
-		throw new Error('failed to add the channel object');
+	.then(function(reply) {
+		if(reply == 1) {
+			console.log('channel added to title list');
+			// finally save the channel hash
+			return redis.hmsetAsync(
+				rKeys.rk(rKeys.channels, req.body.title),
+				rKeys.channelProps.title, req.body.title,
+				rKeys.channelProps.usersCount, 0,
+				rKeys.channelProps.messagesCount, 0,
+				rKeys.channelProps.type, req.body.type,
+				rKeys.channelProps.createAt, moment().valueOf()
+			);
+		} else {
+			redis.sremAsync(rKeys.channelTitles, req.body.title)
+			.then(null, function(err) {
+				throw new Error('addition of channel object failed, rollback action addition to channel list failed')
+			});
+			throw new Error('failed to add the channel object');
+		}
 	});
 }
 
@@ -191,8 +191,6 @@ function joinChannelByTitle(req) {
 		} else if(reply == 0) {
 			throw new Error('Error occurred while adding user to all users list');
 		}
-	}, function(err) {
-		throw new Error('Error occurred while adding user to all users list');
 	})
 	.then(function(reply) {
 		return new Promise(function(resolve, reject) {
@@ -211,9 +209,6 @@ function joinChannelByTitle(req) {
 				reject(reply);
 			}
 		});
-	}, function(err) {
-		redis.sremAsync(rKeys.nibbiters, req.body.username);
-		throw err;
 	});
 }
 
@@ -245,10 +240,6 @@ function leaveChannelByTitle(req) {
 			// finally add the user property to the channel object
 			return redis.del(rKeys.rk(rKeys.channels, req.params.title, rKeys.channelProps.users));
 		} else if(reply == 0) {
-			throw new Error('failed to remove the user from all users list');
-		}
-	}, function(err) {
-		if(err) {
 			throw new Error('failed to remove the user from all users list');
 		}
 	})
@@ -305,7 +296,7 @@ function getAllMessagesByTitle(req) {
 	return redis.sismember(rKeys.channelTitles, req.params.title)
 	.then(function(reply) {
 		if(reply == 1) {
-			
+
 		}
 	})
 }
