@@ -298,11 +298,16 @@ function getChannelUsersByTitle(req) {
 
 
 /**
- * delete a channel
+ * get all messages for a channel
  */
-function getAllMessages() {
-console.log("dsf");
-	return "sdf";
+function getAllMessagesByTitle(req) {
+	// check if the channel exists
+	return redis.sismember(rKeys.channelTitles, req.params.title)
+	.then(function(reply) {
+		if(reply == 1) {
+			
+		}
+	})
 }
 
 /**
@@ -311,7 +316,7 @@ console.log("dsf");
 function postNewMessage(req) {
 	// check if the channel exists
 	return redis.sismemberAsync(rKeys.channelTitles, req.params.title)
-	.then(function() {
+	.then(function(reply) {
 		if(reply == 1) {
 			// check if the user is registered with any channel
 			return redis.sismemberAsync(rKeys.nibbiters, req.body.username);
@@ -343,29 +348,19 @@ function postNewMessage(req) {
 		return new Promise(function(resolve, reject) {
 			if(reply == 1) {
 				resolve (reply);
+			} else {
+				console.log('addition of message object to the channel failed');
+				redis.sremAsync(rKeys.messages, req.body.messages)
+				.then(function(reply) {
+					if(reply) {
+						throw new Error('message addition to list rollback action successful');
+					} else {
+						throw new Error('message addition to list rollback action failed');
+					}
+				});
 			}
 		});
-	}, function(err) {
-		console.log('addition of message object to the channel failed');
-		redis.sremAsync(rKeys.messages, req.body.messages)
-		.then(function(reply) {
-			if(reply) {
-				throw new Error('message addition to list rollback action successful');
-			} else {
-				throw new Error('message addition to list rollback action failed');
-			}
-		}, function(err) {
-			throw err;
-		})
-	})
-}
-
-/**
- * get a single message by id
- */
-function getMessageById() {
-	console.log("dsf");
-	return "sdf";
+	});
 }
 
 /**
@@ -440,7 +435,6 @@ module.exports = {
 	// message operations
 	getAllMessages,
 	postNewMessage,
-	getMessageById,
 	updateMessage,
 	deleteMessage
 };

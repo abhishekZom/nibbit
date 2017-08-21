@@ -185,14 +185,21 @@ function getChannelUsersByTitle(req, res) {
 /**
  * delete a channel
  */
-function getAllMessages(req, res) {
-	ChannelService.getChannelById(req.body, function(err, data) {
-		if(!err) {
-			res.json(data);
-			successHandler(data);
-		}
-		else errorHandler(err);
-	});
+function getAllMessagesByTitle(req, res) {
+	if(req.params.title) {
+		ChannelService.getAllMessagesByTitle(req).then(function(data) {
+			if(data) {
+				res.status(200).json(data);
+			}
+		}).catch(function(err) {
+			if(err) {
+				helpers.responseHandler(err);
+				res.status(400).send({Error: err.name, Message: err.message});
+			}
+		});
+	} else {
+		res.status(400).send('bad arguments');
+	}
 }
 
 /**
