@@ -358,8 +358,38 @@ function postNewMessage(req) {
  * update a message
  */
 function updateMessage() {
-	console.log("dsf");
-	return "sdf";
+	// check if the channel exists
+	redis.ismemberAsync(rKeys.channelTitles, req.params.title)
+	.then(function(reply) {
+		if(reply == 1) {
+			// check if the message exists
+			return redis.ismemberAsync(rKeys.messages, req.body.oldMessage);
+		} else {
+			throw new Error('the requested channel does not exist');
+		}
+	})
+	.then(function(reply) {
+		if(reply == 1) {
+			// remove the message from the list of all messages
+			return redis.sremAsync(rKeys.messages, req.body.oldMessage);
+		} else {
+			throw new Error('the requested message does not exist');
+		}
+	})
+	.then(function(reply) {
+		if(reply == 1) {
+			// add new message to the list of all messages
+			return redis.saddAsync(rKeys.messages, req.body.newMessage);
+		} else {
+			throw new Error('the addition of new message to all messages list failed');
+		}
+	})
+	.then(function(reply) {
+		if(reply == 1) {
+			// remove the message object from the channel
+			return redis.delAsync(rKeys.rk(rKeys.channels, req.params.title, rKeys.messageProps.message));
+		}
+	})
 }
 
 /**
