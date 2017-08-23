@@ -353,6 +353,8 @@ function postNewMessage(req) {
 	});
 }
 
+
+
 /**
  * update a message
  */
@@ -428,6 +430,8 @@ function updateMessage() {
 	});
 }
 
+
+
 /**
  * delete a message
  */
@@ -490,7 +494,7 @@ module.exports = {
 	leaveChannelByTitle,
 	
 	// message operations
-	getAllMessages,
+	getAllMessagesByTitle,
 	postNewMessage,
 	updateMessage,
 	deleteMessage

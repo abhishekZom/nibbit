@@ -224,8 +224,8 @@ function postNewMessage(req, res) {
 /**
  * delete a channel
  */
-function getMessageById(req, res) {
-	ChannelService.getChannelById(req.body, function(err, data) {
+function getAllMessagesByTitle(req, res) {
+	ChannelService.getAllMessagesByTitle(req.body, function(err, data) {
 		if(!err) {
 			res.json(data);
 			successHandler(data);
@@ -274,9 +274,8 @@ module.exports = {
 	leaveChannelByTitle,
 	
 	// message operations
-	getAllMessages,
+	getAllMessagesByTitle,
 	postNewMessage,
-	getMessageById,
 	updateMessage,
 	deleteMessage
 };
