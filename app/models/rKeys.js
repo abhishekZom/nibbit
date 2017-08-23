@@ -48,8 +48,9 @@ rKeys.userProps = {
 
 // message properties
 rKeys.messageProps = {
+  messageTitle: "messageTitle",
   userName: "userName",
-  message : "message",
+  messages : "messages",
   postedAt: "postedAt"
 }
 

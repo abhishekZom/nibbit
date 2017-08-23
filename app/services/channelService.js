@@ -18,8 +18,6 @@ const rKeys = require('../models/rKeys');
 const moment = require('moment');
 const helper = require('../common/helper');
 
-var failCheckFlag = false;
-
 /**
  * Get a list of all the channels titles
  * @param  {Function} cb 	the callback for handeling success and error
@@ -326,7 +324,8 @@ function postNewMessage(req) {
 		if(reply == 1) {
 			// finally add message to the channel
 			return redis.hmsetAsync(
-				rKeys.rk(rKeys.channels, req.params.title, rKeys.channelProps.messages),
+				rKeys.rk(rKeys.channels, req.params.title, rKeys.channelProps.messages, req.body.messageTitle),
+				rkeys.messageProps.messageTitle, req.body.messageTitle,
 				rKeys.messageProps.message, req.body.message,
 				rKeys.messageProps.userName, req.body.userName,
 				rKeys.messageProps.postedAt, moment().valueOf()
@@ -379,17 +378,54 @@ function updateMessage() {
 	.then(function(reply) {
 		if(reply == 1) {
 			// add new message to the list of all messages
-			return redis.saddAsync(rKeys.messages, req.body.newMessage);
+			return redis.saddAsync(rKeys.messages, req.body.message);
 		} else {
-			throw new Error('the addition of new message to all messages list failed');
+			throw new Error('the removal of old message from all messages list failed');
 		}
 	})
 	.then(function(reply) {
 		if(reply == 1) {
 			// remove the message object from the channel
-			return redis.delAsync(rKeys.rk(rKeys.channels, req.params.title, rKeys.messageProps.message));
+			return redis.delAsync(rKeys.rk(rKeys.channels, req.params.title, rKeys.messageProps.messages, req.body.messageTitle));
+		} else {
+			console.log('the addition of new message to all messages list failed');
+			// rollback the removal action
+			return redis.saddAsync(rKeys.messages, req.body.oldMessage)
+			.then(function(reply) {
+				return new Promise(function(resolve, reject) {
+					if(reply == 1) {
+						resolve('the addition of new message to all messages failed. Deletion of old message from list of all messages rolled back');
+					} else {
+						reject('the addition of new message to all messages failed. rollback action of deletion of message from all messages list failed');
+					}
+				});
+				
+			})
 		}
 	})
+	.then(function(reply) {
+		if(reply == 1) {
+			// add new message object to the channel
+			return redis.hmsetAsync(
+				rKeys.rk(rKeys.channels, req.params.title, rKeys.channelProps.messages, req.body.messageTitle),
+				rkeys.messageProps.messageTitle, req.body.messageTitle,
+				rKeys.messageProps.message, req.body.message,
+				rKeys.messageProps.userName, req.body.userName,
+				rKeys.messageProps.postedAt, moment().valueOf()
+			);
+		} else {
+			console.log('the removal of message object from channel failed');
+		}
+	})
+	.then(function(reply) {
+		return new Promise(function(resolve, reject) {
+			if(reply == 1) {
+				resolve('message posted successfully');
+			} else {
+				reject('failed to post message');
+			}
+		});
+	});
 }
 
 /**
@@ -416,7 +452,7 @@ function deleteMessage(req) {
 	})
 	.then(function(reply) {
 		if(reply == 1) {
-			return redis.delAsync(rKeys.rk(rKeys.channels, req.params.title, rKeys.messageProps.message));
+			return redis.delAsync(rKeys.rk(rKeys.channels, req.params.title, rKeys.messageProps.messages, req.body.messageTitle));
 		} else if(reply == 0) {
 			throw new Error('failed to remove the message from all messages list');
 		}
@@ -426,7 +462,7 @@ function deleteMessage(req) {
 			if(reply == 1) {
 				resolve(reply);
 			} else if(reply == 0) {
-				console.log("action to remove the message failed");
+				console.log("action to remove the message object from channel failed");
 				redis.saddAsync(rKeys.messages, req.body.message)
 				.then(function(innerReply) {
 					if(innerReply == 1) {
